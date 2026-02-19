@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+contracts/artifacts/
+node_modules/
+frontend/build/
+.DS_Store
+.github/
+agents/

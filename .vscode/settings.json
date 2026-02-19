@@ -1,0 +1,8 @@
+{
+  "sonarlint.analysisExcludesStandalone": "**/AppData/Local/Programs/Python/**,**/.vscode/extensions/**",
+  "sonarlint.pathToNodeExecutable": "",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}
