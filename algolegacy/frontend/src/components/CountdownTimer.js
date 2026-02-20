@@ -26,14 +26,14 @@ export default function CountdownTimer({ secondsRemaining }) {
   if (sec <= 0) {
     return (
       <div className="alert alert-danger" style={{ textAlign: "center", fontWeight: 700 }}>
-        ⚠️ Inactivity period elapsed — inheritance can be activated!
+        Inactivity period elapsed — inheritance can be activated!
       </div>
     );
   }
 
   return (
     <div>
-      <p className="text-muted" style={{ marginBottom: 12 }}>
+      <p className="text-muted" style={{ marginBottom: 14, letterSpacing: '0.04em', fontSize: 12, textTransform: 'uppercase' }}>
         Time until inheritance activates
       </p>
       <div className="countdown-grid">

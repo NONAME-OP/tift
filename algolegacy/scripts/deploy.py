@@ -12,13 +12,36 @@ After deploy, copy the printed APP_ID into frontend/.env:
     REACT_APP_APP_ID=<your-app-id>
 """
 
-import os, sys, json, base64, pathlib
+import os, sys, json, base64, pathlib, time, math, functools
 from dotenv import load_dotenv
 from algosdk import mnemonic, account
 from algosdk.v2client import algod as algod_client_module
 from algosdk.transaction import (
     ApplicationCreateTxn, StateSchema, wait_for_confirmation, OnComplete
 )
+from algosdk.error import AlgodHTTPError
+
+# ── Rate-limit helpers ────────────────────────────────────────────────────────
+# AlgoNode free tier: ~1 req/s on algod; add backoff on HTTP 429.
+_CALL_DELAY = 0.5          # seconds between sequential API calls
+_MAX_RETRIES = 5
+_BACKOFF_BASE = 2          # exponential base (2 ** attempt seconds)
+
+def _retry_on_429(fn, *args, **kwargs):
+    """Call fn(*args, **kwargs) retrying up to _MAX_RETRIES times on HTTP 429."""
+    for attempt in range(_MAX_RETRIES):
+        try:
+            result = fn(*args, **kwargs)
+            time.sleep(_CALL_DELAY)   # polite pause after every successful call
+            return result
+        except AlgodHTTPError as exc:
+            if "429" in str(exc) or getattr(exc, "code", None) == 429:
+                wait = _BACKOFF_BASE ** attempt
+                print(f"   ⏳ Rate limited – retrying in {wait}s (attempt {attempt+1}/{_MAX_RETRIES})...")
+                time.sleep(wait)
+            else:
+                raise
+    raise RuntimeError("AlgoNode rate limit: max retries exceeded")
 
 load_dotenv()
 
@@ -26,7 +49,7 @@ load_dotenv()
 NETWORK = os.getenv("NETWORK", "testnet")
 
 ALGOD_SERVERS = {
-    "testnet":  ("https://testnet-api.algonode.cloud", 443, ""),
+    "testnet":  ("https://testnet-api.algonode.network", "", ""),
     "localnet": ("http://localhost", 4001, "a" * 64),
 }
 
@@ -49,8 +72,8 @@ address     = account.address_from_private_key(private_key)
 
 
 def compile_program(algod, source: str) -> bytes:
-    """Compile TEAL source and return raw bytes."""
-    response = algod.compile(source)
+    """Compile TEAL source and return raw bytes (rate-limit safe)."""
+    response = _retry_on_429(algod.compile, source)
     return base64.b64decode(response["result"])
 
 
@@ -62,15 +85,16 @@ def main():
     clear_teal    = (artifacts / "AlgoLegacy.clear.teal").read_text()
 
     # Build algod client
-    url = f"{algod_server}:{algod_port}"
-    algod = algod_client_module.AlgodClient(algod_token, url, headers={"User-Agent": "algosdk"})
+    url = algod_server if not algod_port else f"{algod_server}:{algod_port}"
+    headers = {"User-Agent": "algosdk", "x-api-key": algod_token} if algod_token else {"User-Agent": "algosdk"}
+    algod = algod_client_module.AlgodClient(algod_token, url, headers=headers)
 
     print(f"\n🚀 Deploying AlgoLegacy to {NETWORK.upper()}...")
     print(f"   Deployer : {address}")
 
     # Check balance
     try:
-        info = algod.account_info(address)
+        info = _retry_on_429(algod.account_info, address)
         balance_algo = info.get("amount", 0) / 1_000_000
         print(f"   Balance  : {balance_algo:.4f} ALGO")
         if balance_algo < 0.2:
@@ -88,15 +112,22 @@ def main():
     print("   Compiling clear program...")
     clear_bytes    = compile_program(algod, clear_teal)
 
+    # Extra program pages: each page = 2048 bytes (max 3 extra pages)
+    extra_pages = max(0, math.ceil(len(approval_bytes) / 2048) - 1)
+    if extra_pages > 0:
+        print(f"   Program size : {len(approval_bytes)} bytes — using {extra_pages} extra page(s)")
+
     # State schema (exact count from algolegacy.py):
-    #   Uint64 (11): inactivity_period, last_checkin, inheritance_active, total_locked,
-    #               will_created, b1_percent, b1_claimed, b2_percent, b2_claimed,
-    #               b3_percent, b3_claimed
+    #   Uint64 (18): inactivity_period, last_checkin, inheritance_active, total_locked,
+    #                will_created, b1_percent, b1_claimed, b2_percent, b2_claimed,
+    #                b3_percent, b3_claimed,
+    #                locked_asa_id, b1_asa_amount, b1_asa_claimed,
+    #                b2_asa_amount, b2_asa_claimed, b3_asa_amount, b3_asa_claimed
     #   Bytes  (4) : owner, b1_address, b2_address, b3_address
-    global_schema = StateSchema(num_uints=11, num_byte_slices=4)
+    global_schema = StateSchema(num_uints=18, num_byte_slices=4)
     local_schema  = StateSchema(num_uints=0, num_byte_slices=0)
 
-    sp = algod.suggested_params()
+    sp = _retry_on_429(algod.suggested_params)
 
     txn = ApplicationCreateTxn(
         sender=address,
@@ -106,15 +137,16 @@ def main():
         clear_program=clear_bytes,
         global_schema=global_schema,
         local_schema=local_schema,
+        extra_pages=extra_pages,
     )
 
     signed_txn = txn.sign(private_key)
-    txid = algod.send_transaction(signed_txn)
+    txid = _retry_on_429(algod.send_transaction, signed_txn)
 
     print(f"   Tx sent  : {txid}")
     print("   Waiting for confirmation...")
 
-    result = wait_for_confirmation(algod, txid, wait_rounds=5)
+    result = wait_for_confirmation(algod, txid, wait_rounds=8)
     app_id   = result["application-index"]
     import algosdk.encoding as enc
     app_addr = enc.encode_address(enc.checksum(b"appID" + app_id.to_bytes(8, "big")))
@@ -124,7 +156,7 @@ def main():
     print(f"  📌 App ID       : {app_id}")
     print(f"  📦 App Address  : {app_addr}")
     print(f"  🔗 Tx ID        : {txid}")
-    print(f"  🌐 Explorer     : https://testnet.algoexplorer.io/application/{app_id}")
+    print(f"  🌐 Explorer     : https://testnet.explorer.perawallet.app/application/{app_id}")
     print("═" * 60)
     print("\nNext steps:")
     print("  1. Fund the app address with at least 0.5 ALGO for inner txn fees:")

@@ -3,11 +3,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useState } from "react";
 import { useWallet } from "./WalletContext";
-import { callMethod, APP_ID, toAlgo, EXPLORER_BASE } from "../algorand";
+import { callMethod, toAlgo, EXPLORER_BASE } from "../algorand";
 import algosdk from "algosdk";
 import { toast } from "react-toastify";
 
-export default function BeneficiaryPanel({ state, onRefresh }) {
+export default function BeneficiaryPanel({ state, appId, onRefresh }) {
   const { activeAddr, makeSigner } = useWallet();
   const [loading, setLoading] = useState(null);
 
@@ -34,13 +34,13 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
         sender: activeAddr,
         signer,
         methodName: "claim",
-        appId: APP_ID,
+        appId: appId,
         methodArgs: [BigInt(slot)],
       });
       const payout = Number(result.returnValue ?? 0);
       toast.success(
         <span>
-          🎉 Claimed {toAlgo(payout)} ALGO!{" "}
+          Claimed {toAlgo(payout)} ALGO!{" "}
           <a
             href={`${EXPLORER_BASE}/tx/${result.txId}`}
             target="_blank"
@@ -69,10 +69,10 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
         sender: activeAddr,
         signer,
         methodName: "activate_inheritance",
-        appId: APP_ID,
+        appId: appId,
         methodArgs: [],
       });
-      toast.success("🔓 Inheritance activated!");
+      toast.success("Inheritance activated!");
       onRefresh?.();
     } catch (err) {
       toast.error(err.message || "Activation failed — inactivity period may not have elapsed");
@@ -90,10 +90,10 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
         sender: activeAddr,
         signer,
         methodName: "force_activate",
-        appId: APP_ID,
+        appId: appId,
         methodArgs: [],
       });
-      toast.success("⚡ Inheritance force-activated!");
+      toast.success("Inheritance force-activated!");
       onRefresh?.();
     } catch (err) {
       console.error(err);
@@ -103,12 +103,12 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
     }
   };
 
-  const appAddress = APP_ID ? algosdk.getApplicationAddress(APP_ID) : "";
+  const appAddress = appId ? algosdk.getApplicationAddress(appId) : "";
   const isOwner = activeAddr && state.owner === activeAddr;
 
   return (
     <div className="card">
-      <h2>👥 Beneficiaries</h2>
+      <h2>Beneficiaries</h2>
 
       {beneficiaries.map((b) => (
         <div className="beneficiary-row" key={b.slot}>
@@ -131,7 +131,7 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
               disabled={!!loading}
               onClick={() => handleClaim(b.slot)}
             >
-              {loading === b.slot ? <><span className="spinner" /> Claiming…</> : "💎 Claim"}
+              {loading === b.slot ? <><span className="spinner" /> Claiming…</> : "Claim"}
             </button>
           ) : (
             <span className="text-muted" style={{ fontSize: 12 }}>
@@ -148,7 +148,7 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
           {canActivate ? (
             <>
               <div className="alert alert-warning" style={{ marginBottom: 12 }}>
-                ⚠️ Inactivity period elapsed! Inheritance can now be activated.
+                Inactivity period elapsed! Inheritance can now be activated.
               </div>
               <button
                 className="btn btn-danger"
@@ -156,12 +156,12 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
                 onClick={handleActivate}
                 style={{ width: "100%" }}
               >
-                {loading === "activate" ? <><span className="spinner" /> Activating…</> : "🔓 Activate Inheritance"}
+                {loading === "activate" ? <><span className="spinner" /> Activating…</> : "Activate Inheritance"}
               </button>
             </>
           ) : (
             <div className="alert alert-info" style={{ textAlign: "center", marginTop: 8 }}>
-              ⏳ Activation unlocks in <strong>{timeRemaining}s</strong> (owner still active)
+              Activation unlocks in <strong>{timeRemaining}s</strong> (owner still active)
             </div>
           )}
 
@@ -173,7 +173,7 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
               onClick={handleForceActivate}
               style={{ width: "100%", marginTop: 10, opacity: 0.85, border: "1px dashed #ff6b6b" }}
             >
-              {loading === "force" ? <><span className="spinner" /> Force Activating…</> : "⚡ Force Activate (Owner Only)"}
+              {loading === "force" ? <><span className="spinner" /> Force Activating…</> : "Force Activate (Owner Only)"}
             </button>
           )}
         </>
@@ -182,7 +182,7 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
       {/* Contract address */}
       <hr className="divider" />
       <div style={{ fontSize: 11, color: "var(--text-muted)", wordBreak: "break-all", textAlign: "center" }}>
-        <span style={{ marginRight: 6 }}>📦 Contract Address:</span>
+        <span style={{ marginRight: 6 }}>Contract Address:</span>
         <a
           href={`${EXPLORER_BASE}/address/${appAddress}`}
           target="_blank"
@@ -195,3 +195,5 @@ export default function BeneficiaryPanel({ state, onRefresh }) {
     </div>
   );
 }
+
+

@@ -38,7 +38,9 @@ from pyteal import (
 
 MIN_INACTIVITY_SECONDS = 60
 MIN_DEPOSIT_MICROALGOS = 1_000_000
-ERR_NO_WILL = "No will exists"
+ERR_NO_WILL              = "No will exists"
+ERR_INHERITANCE_ACTIVE   = "Inheritance already active"
+ERR_ALREADY_CLAIMED      = "Already claimed"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Application + module-level global state
@@ -68,8 +70,18 @@ b3_address = GlobalStateValue(TealType.bytes,  key="b3_address", default=Bytes("
 b3_percent = GlobalStateValue(TealType.uint64, key="b3_percent", default=Int(0))
 b3_claimed = GlobalStateValue(TealType.uint64, key="b3_claimed", default=Int(0))
 
+# ── Digital Assets (ASA) ──────────────────────────────────────────────────────
+locked_asa_id  = GlobalStateValue(TealType.uint64, key="locked_asa_id",  default=Int(0))
+b1_asa_amount  = GlobalStateValue(TealType.uint64, key="b1_asa_amount",  default=Int(0))
+b1_asa_claimed = GlobalStateValue(TealType.uint64, key="b1_asa_claimed", default=Int(0))
+b2_asa_amount  = GlobalStateValue(TealType.uint64, key="b2_asa_amount",  default=Int(0))
+b2_asa_claimed = GlobalStateValue(TealType.uint64, key="b2_asa_claimed", default=Int(0))
+b3_asa_amount  = GlobalStateValue(TealType.uint64, key="b3_asa_amount",  default=Int(0))
+b3_asa_claimed = GlobalStateValue(TealType.uint64, key="b3_asa_claimed", default=Int(0))
+
 # ─────────────────────────────────────────────────────────────────────────────
-# Create application  (15 global state keys × 2 = 30 schema ints/bytes)
+# Create application  (22 global state keys: 15 original + 7 ASA)
+# Schema: 4 byte-slices, 18 ints
 # ─────────────────────────────────────────────────────────────────────────────
 app = Application(
     "AlgoLegacy",
@@ -79,6 +91,11 @@ app = Application(
         b1_address, b1_percent, b1_claimed,
         b2_address, b2_percent, b2_claimed,
         b3_address, b3_percent, b3_claimed,
+        # ASA state
+        locked_asa_id,
+        b1_asa_amount, b1_asa_claimed,
+        b2_asa_amount, b2_asa_claimed,
+        b3_asa_amount, b3_asa_claimed,
     ],
 )
 
@@ -99,7 +116,7 @@ def create_will(
     output:     abi.String,
 ) -> Expr:
     """
-    Initialize the will. Can only be called once.
+    Initialize the will. Can only be called once per app instance.
     Caller becomes the owner. Percentages must sum to 100.
     """
     total_pct = pct1.get() + pct2.get() + pct3.get()
@@ -134,10 +151,10 @@ def deposit(
     *,
     output: abi.Uint64,
 ) -> Expr:
-    """Lock ALGO into the will. Grouped PaymentTransaction required."""
+    """Lock ALGO into the will. Full payment amount is locked with no fees."""
     return Seq(
         Assert(will_created.get() == Int(1),                         comment="Create will first"),
-        Assert(inheritance_active.get() == Int(0),                   comment="Inheritance already active"),
+        Assert(inheritance_active.get() == Int(0),                   comment=ERR_INHERITANCE_ACTIVE),
         Assert(Txn.sender() == owner.get(),                          comment="Only owner can deposit"),
         Assert(payment.get().receiver() == Global.current_application_address(),
                comment="Payment must go to contract"),
@@ -156,7 +173,7 @@ def check_in(*, output: abi.Uint64) -> Expr:
     return Seq(
         Assert(will_created.get() == Int(1),                         comment=ERR_NO_WILL),
         Assert(Txn.sender() == owner.get(),                          comment="Only owner can check in"),
-        Assert(inheritance_active.get() == Int(0),                   comment="Inheritance already active"),
+        Assert(inheritance_active.get() == Int(0),                   comment=ERR_INHERITANCE_ACTIVE),
         last_checkin.set(Global.latest_timestamp()),
         output.set(Global.latest_timestamp()),
     )
@@ -198,12 +215,24 @@ def force_activate(*, output: abi.String) -> Expr:
 # ─────────────────────────────────────────────────────────────────────────────
 @app.external
 def claim(beneficiary_slot: abi.Uint64, *, output: abi.Uint64) -> Expr:
-    """Beneficiary claims their share (slot 1, 2, or 3). Double-claim protected."""
-    slot   = beneficiary_slot.get()
-    locked = total_locked.get()
+    """Beneficiary claims their full share (slot 1, 2, or 3). No fees deducted."""
+    slot    = beneficiary_slot.get()
+    locked  = total_locked.get()
 
-    def payout(pct: Expr) -> Expr:
+    def share(pct: Expr) -> Expr:
         return (locked * pct) / Int(100)
+
+    def pay_out(addr: Expr, pct: Expr, claimed_flag: GlobalStateValue) -> Expr:
+        return Seq(
+            InnerTxnBuilder.Execute({
+                TxnField.type_enum: TxnType.Payment,
+                TxnField.receiver:  addr,
+                TxnField.amount:    share(pct),
+                TxnField.fee:       Int(0),
+            }),
+            claimed_flag.set(Int(1)),
+            output.set(share(pct)),
+        )
 
     return Seq(
         Assert(inheritance_active.get() == Int(1), comment="Inheritance not active"),
@@ -212,38 +241,17 @@ def claim(beneficiary_slot: abi.Uint64, *, output: abi.Uint64) -> Expr:
             [slot == Int(1), Seq(
                 Assert(Txn.sender() == b1_address.get(), comment="Not beneficiary 1"),
                 Assert(b1_claimed.get() == Int(0),       comment="Slot 1 already claimed"),
-                InnerTxnBuilder.Execute({
-                    TxnField.type_enum: TxnType.Payment,
-                    TxnField.receiver:  b1_address.get(),
-                    TxnField.amount:    payout(b1_percent.get()),
-                    TxnField.fee:       Int(0),
-                }),
-                b1_claimed.set(Int(1)),
-                output.set(payout(b1_percent.get())),
+                pay_out(b1_address.get(), b1_percent.get(), b1_claimed),
             )],
             [slot == Int(2), Seq(
                 Assert(Txn.sender() == b2_address.get(), comment="Not beneficiary 2"),
                 Assert(b2_claimed.get() == Int(0),       comment="Slot 2 already claimed"),
-                InnerTxnBuilder.Execute({
-                    TxnField.type_enum: TxnType.Payment,
-                    TxnField.receiver:  b2_address.get(),
-                    TxnField.amount:    payout(b2_percent.get()),
-                    TxnField.fee:       Int(0),
-                }),
-                b2_claimed.set(Int(1)),
-                output.set(payout(b2_percent.get())),
+                pay_out(b2_address.get(), b2_percent.get(), b2_claimed),
             )],
             [slot == Int(3), Seq(
                 Assert(Txn.sender() == b3_address.get(), comment="Not beneficiary 3"),
                 Assert(b3_claimed.get() == Int(0),       comment="Slot 3 already claimed"),
-                InnerTxnBuilder.Execute({
-                    TxnField.type_enum: TxnType.Payment,
-                    TxnField.receiver:  b3_address.get(),
-                    TxnField.amount:    payout(b3_percent.get()),
-                    TxnField.fee:       Int(0),
-                }),
-                b3_claimed.set(Int(1)),
-                output.set(payout(b3_percent.get())),
+                pay_out(b3_address.get(), b3_percent.get(), b3_claimed),
             )],
         ),
     )
@@ -283,7 +291,116 @@ def revoke_will(*, output: abi.String) -> Expr:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7. READ-ONLY HELPERS
+# 7. DIGITAL ASSET (ASA) METHODS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.external
+def opt_in_asa(asset: abi.Asset, *, output: abi.String) -> Expr:
+    """
+    Contract opts in to the given ASA so it can hold it.
+    Only the owner can call this. Sets the tracked ASA ID.
+    Fee must cover the inner opt-in transaction (fee budget ≥ 2000).
+    """
+    return Seq(
+        Assert(will_created.get() == Int(1),        comment=ERR_NO_WILL),
+        Assert(Txn.sender() == owner.get(),          comment="Only owner can opt contract in"),
+        Assert(inheritance_active.get() == Int(0),  comment=ERR_INHERITANCE_ACTIVE),
+        InnerTxnBuilder.Execute({
+            TxnField.type_enum:     TxnType.AssetTransfer,
+            TxnField.xfer_asset:    asset.asset_id(),
+            TxnField.asset_receiver: Global.current_application_address(),
+            TxnField.asset_amount:  Int(0),
+            TxnField.fee:           Int(0),
+        }),
+        locked_asa_id.set(asset.asset_id()),
+        output.set("Contract opted in to ASA"),
+    )
+
+
+@app.external
+def lock_asa(
+    transfer:  abi.AssetTransferTransaction,
+    b1_amount: abi.Uint64,
+    b2_amount: abi.Uint64,
+    b3_amount: abi.Uint64,
+    *,
+    output: abi.String,
+) -> Expr:
+    """
+    Owner transfers ASA tokens into the will, specifying how many units
+    each beneficiary slot should receive.
+    """
+    total_asa = b1_amount.get() + b2_amount.get() + b3_amount.get()
+    return Seq(
+        Assert(will_created.get() == Int(1),        comment=ERR_NO_WILL),
+        Assert(inheritance_active.get() == Int(0),  comment=ERR_INHERITANCE_ACTIVE),
+        Assert(Txn.sender() == owner.get(),          comment="Only owner can lock ASA"),
+        Assert(locked_asa_id.get() > Int(0),        comment="Opt contract in to an ASA first"),
+        Assert(
+            transfer.get().xfer_asset() == locked_asa_id.get(),
+            comment="ASA ID mismatch — ensure opt-in was done for this asset",
+        ),
+        Assert(
+            transfer.get().asset_receiver() == Global.current_application_address(),
+            comment="Transfer must go to contract",
+        ),
+        Assert(
+            transfer.get().asset_amount() == total_asa,
+            comment="Transfer amount must equal sum of beneficiary allocations",
+        ),
+        b1_asa_amount.set(b1_asa_amount.get() + b1_amount.get()),
+        b2_asa_amount.set(b2_asa_amount.get() + b2_amount.get()),
+        b3_asa_amount.set(b3_asa_amount.get() + b3_amount.get()),
+        output.set("ASA locked into will"),
+    )
+
+
+@app.external
+def claim_asa(beneficiary_slot: abi.Uint64, *, output: abi.Uint64) -> Expr:
+    """Beneficiary claims their ASA allocation (slot 1, 2, or 3)."""
+    slot = beneficiary_slot.get()
+
+    def pay_asa(addr: Expr, amount: GlobalStateValue, claimed_flag: GlobalStateValue) -> Expr:
+        return Seq(
+            InnerTxnBuilder.Execute({
+                TxnField.type_enum:     TxnType.AssetTransfer,
+                TxnField.xfer_asset:    locked_asa_id.get(),
+                TxnField.asset_receiver: addr,
+                TxnField.asset_amount:  amount.get(),
+                TxnField.fee:           Int(0),
+            }),
+            claimed_flag.set(Int(1)),
+            output.set(amount.get()),
+        )
+
+    return Seq(
+        Assert(inheritance_active.get() == Int(1), comment="Inheritance not active"),
+        Assert(locked_asa_id.get() > Int(0),       comment="No ASA locked in this will"),
+        Cond(
+            [slot == Int(1), Seq(
+                Assert(Txn.sender() == b1_address.get(),  comment="Not beneficiary 1"),
+                Assert(b1_asa_claimed.get() == Int(0),    comment=ERR_ALREADY_CLAIMED),
+                Assert(b1_asa_amount.get()  > Int(0),     comment="No ASA allocated to slot 1"),
+                pay_asa(b1_address.get(), b1_asa_amount, b1_asa_claimed),
+            )],
+            [slot == Int(2), Seq(
+                Assert(Txn.sender() == b2_address.get(),  comment="Not beneficiary 2"),
+                Assert(b2_asa_claimed.get() == Int(0),    comment=ERR_ALREADY_CLAIMED),
+                Assert(b2_asa_amount.get()  > Int(0),     comment="No ASA allocated to slot 2"),
+                pay_asa(b2_address.get(), b2_asa_amount, b2_asa_claimed),
+            )],
+            [slot == Int(3), Seq(
+                Assert(Txn.sender() == b3_address.get(),  comment="Not beneficiary 3"),
+                Assert(b3_asa_claimed.get() == Int(0),    comment=ERR_ALREADY_CLAIMED),
+                Assert(b3_asa_amount.get()  > Int(0),     comment="No ASA allocated to slot 3"),
+                pay_asa(b3_address.get(), b3_asa_amount, b3_asa_claimed),
+            )],
+        ),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. READ-ONLY HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 @app.external(read_only=True)
 def get_will_status(*, output: abi.String) -> Expr:

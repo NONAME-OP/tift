@@ -14,16 +14,17 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        🏛 Algo<span>Legacy</span>
+        <div className="navbar-logo-icon" />
+        Algo<span>Legacy</span>
         {APP_ID > 0 && (
           <a
             className="explorer-link"
             href={`${EXPLORER_BASE}/application/${APP_ID}`}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: 12, marginLeft: 8 }}
+            style={{ fontSize: 11, marginLeft: 8, opacity: 0.7 }}
           >
-            App #{APP_ID} ↗
+            #{APP_ID} ↗
           </a>
         )}
       </div>
@@ -31,7 +32,7 @@ export default function Navbar() {
       <div className="flex-row">
         {isConnected ? (
           <>
-            <span style={{ fontFamily: "monospace", fontSize: 13, color: "var(--text-muted)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)", letterSpacing: '0.03em' }}>
               {short(activeAddr)}&nbsp;&nbsp;
               <strong style={{ color: "var(--accent-green)" }}>
                 {toAlgo(balance)} ALGO
@@ -43,7 +44,7 @@ export default function Navbar() {
           </>
         ) : (
           <button className="btn btn-primary" onClick={connect} disabled={connecting}>
-            {connecting ? <><span className="spinner" /> Connecting…</> : "🔗 Connect Pera Wallet"}
+            {connecting ? <><span className="spinner" /> Connecting…</> : "Connect Pera Wallet"}
           </button>
         )}
       </div>

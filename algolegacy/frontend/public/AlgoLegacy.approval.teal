@@ -1,0 +1,1276 @@
+#pragma version 8
+intcblock 0 1 100 4
+bytecblock 0x 0x746f74616c5f6c6f636b6564 0x696e6865726974616e63655f616374697665 0x151f7c75 0x77696c6c5f63726561746564 0x6f776e6572 0x6c6173745f636865636b696e 0x6c6f636b65645f6173615f6964 0x696e61637469766974795f706572696f64 0x62315f61646472657373 0x62325f61646472657373 0x62335f61646472657373 0x62315f6173615f616d6f756e74 0x62325f6173615f616d6f756e74 0x62335f6173615f616d6f756e74 0x62315f70657263656e74 0x62315f636c61696d6564 0x62325f70657263656e74 0x62325f636c61696d6564 0x62335f70657263656e74 0x62335f636c61696d6564 0x62335f6173615f636c61696d6564 0x62325f6173615f636c61696d6564 0x62315f6173615f636c61696d6564
+txn NumAppArgs
+intc_0 // 0
+==
+bnz main_l28
+txna ApplicationArgs 0
+pushbytes 0xdfe96c48 // "create_will(uint64,address,uint64,address,uint64,address,uint64)string"
+==
+bnz main_l27
+txna ApplicationArgs 0
+pushbytes 0x3298e7c0 // "deposit(pay)uint64"
+==
+bnz main_l26
+txna ApplicationArgs 0
+pushbytes 0xd9d61dd1 // "check_in()uint64"
+==
+bnz main_l25
+txna ApplicationArgs 0
+pushbytes 0xef267f5d // "activate_inheritance()string"
+==
+bnz main_l24
+txna ApplicationArgs 0
+pushbytes 0xdefdd873 // "force_activate()string"
+==
+bnz main_l23
+txna ApplicationArgs 0
+pushbytes 0xd1f1ba15 // "claim(uint64)uint64"
+==
+bnz main_l22
+txna ApplicationArgs 0
+pushbytes 0x81373521 // "revoke_will()string"
+==
+bnz main_l21
+txna ApplicationArgs 0
+pushbytes 0x22e688a3 // "opt_in_asa(asset)string"
+==
+bnz main_l20
+txna ApplicationArgs 0
+pushbytes 0x44d37321 // "lock_asa(axfer,uint64,uint64,uint64)string"
+==
+bnz main_l19
+txna ApplicationArgs 0
+pushbytes 0xb311bb20 // "claim_asa(uint64)uint64"
+==
+bnz main_l18
+txna ApplicationArgs 0
+pushbytes 0x19687ddd // "get_will_status()string"
+==
+bnz main_l17
+txna ApplicationArgs 0
+pushbytes 0x41e8fd7f // "get_time_remaining()uint64"
+==
+bnz main_l16
+txna ApplicationArgs 0
+pushbytes 0x41becd83 // "get_locked_balance()uint64"
+==
+bnz main_l15
+err
+main_l15:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub getlockedbalancecaster_25
+intc_1 // 1
+return
+main_l16:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub gettimeremainingcaster_24
+intc_1 // 1
+return
+main_l17:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub getwillstatuscaster_23
+intc_1 // 1
+return
+main_l18:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub claimasacaster_22
+intc_1 // 1
+return
+main_l19:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub lockasacaster_21
+intc_1 // 1
+return
+main_l20:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub optinasacaster_20
+intc_1 // 1
+return
+main_l21:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub revokewillcaster_19
+intc_1 // 1
+return
+main_l22:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub claimcaster_18
+intc_1 // 1
+return
+main_l23:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub forceactivatecaster_17
+intc_1 // 1
+return
+main_l24:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub activateinheritancecaster_16
+intc_1 // 1
+return
+main_l25:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub checkincaster_15
+intc_1 // 1
+return
+main_l26:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub depositcaster_14
+intc_1 // 1
+return
+main_l27:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub createwillcaster_13
+intc_1 // 1
+return
+main_l28:
+txn OnCompletion
+intc_0 // NoOp
+==
+bnz main_l30
+err
+main_l30:
+txn ApplicationID
+intc_0 // 0
+==
+assert
+intc_1 // 1
+return
+
+// create_will
+createwill_0:
+proto 7 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_0 // 0
+==
+// Will already created
+assert
+frame_dig -7
+pushint 60 // 60
+>=
+// Inactivity period too short
+assert
+frame_dig -5
+frame_dig -3
++
+frame_dig -1
++
+intc_2 // 100
+==
+// Percentages must sum to 100
+assert
+bytec 5 // "owner"
+txn Sender
+app_global_put
+bytec 8 // "inactivity_period"
+frame_dig -7
+app_global_put
+bytec 6 // "last_checkin"
+global LatestTimestamp
+app_global_put
+bytec_2 // "inheritance_active"
+intc_0 // 0
+app_global_put
+bytec 4 // "will_created"
+intc_1 // 1
+app_global_put
+bytec 9 // "b1_address"
+frame_dig -6
+app_global_put
+bytec 15 // "b1_percent"
+frame_dig -5
+app_global_put
+bytec 16 // "b1_claimed"
+intc_0 // 0
+app_global_put
+bytec 10 // "b2_address"
+frame_dig -4
+app_global_put
+bytec 17 // "b2_percent"
+frame_dig -3
+app_global_put
+bytec 18 // "b2_claimed"
+intc_0 // 0
+app_global_put
+bytec 11 // "b3_address"
+frame_dig -2
+app_global_put
+bytec 19 // "b3_percent"
+frame_dig -1
+app_global_put
+bytec 20 // "b3_claimed"
+intc_0 // 0
+app_global_put
+pushbytes 0x001957696c6c2063726561746564207375636365737366756c6c79 // 0x001957696c6c2063726561746564207375636365737366756c6c79
+frame_bury 0
+retsub
+
+// deposit
+deposit_1:
+proto 1 1
+intc_0 // 0
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// Create will first
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Inheritance already active
+assert
+txn Sender
+bytec 5 // "owner"
+app_global_get
+==
+// Only owner can deposit
+assert
+frame_dig -1
+gtxns Receiver
+global CurrentApplicationAddress
+==
+// Payment must go to contract
+assert
+frame_dig -1
+gtxns Amount
+pushint 1000000 // 1000000
+>=
+// Minimum deposit is 1 ALGO
+assert
+bytec_1 // "total_locked"
+bytec_1 // "total_locked"
+app_global_get
+frame_dig -1
+gtxns Amount
++
+app_global_put
+bytec_1 // "total_locked"
+app_global_get
+frame_bury 0
+retsub
+
+// check_in
+checkin_2:
+proto 0 1
+intc_0 // 0
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// No will exists
+assert
+txn Sender
+bytec 5 // "owner"
+app_global_get
+==
+// Only owner can check in
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Inheritance already active
+assert
+bytec 6 // "last_checkin"
+global LatestTimestamp
+app_global_put
+global LatestTimestamp
+frame_bury 0
+retsub
+
+// activate_inheritance
+activateinheritance_3:
+proto 0 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// No will exists
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Already activated
+assert
+global LatestTimestamp
+bytec 6 // "last_checkin"
+app_global_get
+bytec 8 // "inactivity_period"
+app_global_get
++
+>
+// Inactivity period not yet elapsed
+assert
+bytec_2 // "inheritance_active"
+intc_1 // 1
+app_global_put
+pushbytes 0x0015496e6865726974616e636520616374697661746564 // 0x0015496e6865726974616e636520616374697661746564
+frame_bury 0
+retsub
+
+// force_activate
+forceactivate_4:
+proto 0 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// No will exists
+assert
+txn Sender
+bytec 5 // "owner"
+app_global_get
+==
+// Only owner can force activate
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Already activated
+assert
+bytec_2 // "inheritance_active"
+intc_1 // 1
+app_global_put
+pushbytes 0x0024496e6865726974616e636520666f7263652d616374697661746564206279206f776e6572 // 0x0024496e6865726974616e636520666f7263652d616374697661746564206279206f776e6572
+frame_bury 0
+retsub
+
+// claim
+claim_5:
+proto 1 1
+intc_0 // 0
+bytec_2 // "inheritance_active"
+app_global_get
+intc_1 // 1
+==
+// Inheritance not active
+assert
+bytec_1 // "total_locked"
+app_global_get
+intc_0 // 0
+>
+// No funds to claim
+assert
+frame_dig -1
+intc_1 // 1
+==
+bnz claim_5_l6
+frame_dig -1
+pushint 2 // 2
+==
+bnz claim_5_l5
+frame_dig -1
+pushint 3 // 3
+==
+bnz claim_5_l4
+err
+claim_5_l4:
+txn Sender
+bytec 11 // "b3_address"
+app_global_get
+==
+// Not beneficiary 3
+assert
+bytec 20 // "b3_claimed"
+app_global_get
+intc_0 // 0
+==
+// Slot 3 already claimed
+assert
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+bytec 11 // "b3_address"
+app_global_get
+itxn_field Receiver
+bytec_1 // "total_locked"
+app_global_get
+bytec 19 // "b3_percent"
+app_global_get
+*
+intc_2 // 100
+/
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 20 // "b3_claimed"
+intc_1 // 1
+app_global_put
+bytec_1 // "total_locked"
+app_global_get
+bytec 19 // "b3_percent"
+app_global_get
+*
+intc_2 // 100
+/
+frame_bury 0
+b claim_5_l7
+claim_5_l5:
+txn Sender
+bytec 10 // "b2_address"
+app_global_get
+==
+// Not beneficiary 2
+assert
+bytec 18 // "b2_claimed"
+app_global_get
+intc_0 // 0
+==
+// Slot 2 already claimed
+assert
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+bytec 10 // "b2_address"
+app_global_get
+itxn_field Receiver
+bytec_1 // "total_locked"
+app_global_get
+bytec 17 // "b2_percent"
+app_global_get
+*
+intc_2 // 100
+/
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 18 // "b2_claimed"
+intc_1 // 1
+app_global_put
+bytec_1 // "total_locked"
+app_global_get
+bytec 17 // "b2_percent"
+app_global_get
+*
+intc_2 // 100
+/
+frame_bury 0
+b claim_5_l7
+claim_5_l6:
+txn Sender
+bytec 9 // "b1_address"
+app_global_get
+==
+// Not beneficiary 1
+assert
+bytec 16 // "b1_claimed"
+app_global_get
+intc_0 // 0
+==
+// Slot 1 already claimed
+assert
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+bytec 9 // "b1_address"
+app_global_get
+itxn_field Receiver
+bytec_1 // "total_locked"
+app_global_get
+bytec 15 // "b1_percent"
+app_global_get
+*
+intc_2 // 100
+/
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 16 // "b1_claimed"
+intc_1 // 1
+app_global_put
+bytec_1 // "total_locked"
+app_global_get
+bytec 15 // "b1_percent"
+app_global_get
+*
+intc_2 // 100
+/
+frame_bury 0
+claim_5_l7:
+retsub
+
+// revoke_will
+revokewill_6:
+proto 0 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// No will exists
+assert
+txn Sender
+bytec 5 // "owner"
+app_global_get
+==
+// Only owner can revoke
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Cannot revoke after activation
+assert
+bytec_1 // "total_locked"
+app_global_get
+intc_0 // 0
+>
+bz revokewill_6_l2
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+bytec 5 // "owner"
+app_global_get
+itxn_field Receiver
+bytec_1 // "total_locked"
+app_global_get
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec_1 // "total_locked"
+intc_0 // 0
+app_global_put
+revokewill_6_l2:
+bytec 4 // "will_created"
+intc_0 // 0
+app_global_put
+bytec 5 // "owner"
+bytec_0 // ""
+app_global_put
+bytec 8 // "inactivity_period"
+intc_0 // 0
+app_global_put
+bytec 6 // "last_checkin"
+intc_0 // 0
+app_global_put
+bytec 9 // "b1_address"
+bytec_0 // ""
+app_global_put
+bytec 15 // "b1_percent"
+intc_0 // 0
+app_global_put
+bytec 16 // "b1_claimed"
+intc_0 // 0
+app_global_put
+bytec 10 // "b2_address"
+bytec_0 // ""
+app_global_put
+bytec 17 // "b2_percent"
+intc_0 // 0
+app_global_put
+bytec 18 // "b2_claimed"
+intc_0 // 0
+app_global_put
+bytec 11 // "b3_address"
+bytec_0 // ""
+app_global_put
+bytec 19 // "b3_percent"
+intc_0 // 0
+app_global_put
+bytec 20 // "b3_claimed"
+intc_0 // 0
+app_global_put
+pushbytes 0x002657696c6c207265766f6b6564202d2066756e64732072657475726e656420746f206f776e6572 // 0x002657696c6c207265766f6b6564202d2066756e64732072657475726e656420746f206f776e6572
+frame_bury 0
+retsub
+
+// opt_in_asa
+optinasa_7:
+proto 1 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// No will exists
+assert
+txn Sender
+bytec 5 // "owner"
+app_global_get
+==
+// Only owner can opt contract in
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Inheritance already active
+assert
+itxn_begin
+intc_3 // axfer
+itxn_field TypeEnum
+frame_dig -1
+txnas Assets
+itxn_field XferAsset
+global CurrentApplicationAddress
+itxn_field AssetReceiver
+intc_0 // 0
+itxn_field AssetAmount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 7 // "locked_asa_id"
+frame_dig -1
+txnas Assets
+app_global_put
+pushbytes 0x0018436f6e7472616374206f7074656420696e20746f20415341 // 0x0018436f6e7472616374206f7074656420696e20746f20415341
+frame_bury 0
+retsub
+
+// lock_asa
+lockasa_8:
+proto 4 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_1 // 1
+==
+// No will exists
+assert
+bytec_2 // "inheritance_active"
+app_global_get
+intc_0 // 0
+==
+// Inheritance already active
+assert
+txn Sender
+bytec 5 // "owner"
+app_global_get
+==
+// Only owner can lock ASA
+assert
+bytec 7 // "locked_asa_id"
+app_global_get
+intc_0 // 0
+>
+// Opt contract in to an ASA first
+assert
+frame_dig -4
+gtxns XferAsset
+bytec 7 // "locked_asa_id"
+app_global_get
+==
+// ASA ID mismatch — ensure opt-in was done for this asset
+assert
+frame_dig -4
+gtxns AssetReceiver
+global CurrentApplicationAddress
+==
+// Transfer must go to contract
+assert
+frame_dig -4
+gtxns AssetAmount
+frame_dig -3
+frame_dig -2
++
+frame_dig -1
++
+==
+// Transfer amount must equal sum of beneficiary allocations
+assert
+bytec 12 // "b1_asa_amount"
+bytec 12 // "b1_asa_amount"
+app_global_get
+frame_dig -3
++
+app_global_put
+bytec 13 // "b2_asa_amount"
+bytec 13 // "b2_asa_amount"
+app_global_get
+frame_dig -2
++
+app_global_put
+bytec 14 // "b3_asa_amount"
+bytec 14 // "b3_asa_amount"
+app_global_get
+frame_dig -1
++
+app_global_put
+pushbytes 0x0014415341206c6f636b656420696e746f2077696c6c // 0x0014415341206c6f636b656420696e746f2077696c6c
+frame_bury 0
+retsub
+
+// claim_asa
+claimasa_9:
+proto 1 1
+intc_0 // 0
+bytec_2 // "inheritance_active"
+app_global_get
+intc_1 // 1
+==
+// Inheritance not active
+assert
+bytec 7 // "locked_asa_id"
+app_global_get
+intc_0 // 0
+>
+// No ASA locked in this will
+assert
+frame_dig -1
+intc_1 // 1
+==
+bnz claimasa_9_l6
+frame_dig -1
+pushint 2 // 2
+==
+bnz claimasa_9_l5
+frame_dig -1
+pushint 3 // 3
+==
+bnz claimasa_9_l4
+err
+claimasa_9_l4:
+txn Sender
+bytec 11 // "b3_address"
+app_global_get
+==
+// Not beneficiary 3
+assert
+bytec 21 // "b3_asa_claimed"
+app_global_get
+intc_0 // 0
+==
+// Already claimed
+assert
+bytec 14 // "b3_asa_amount"
+app_global_get
+intc_0 // 0
+>
+// No ASA allocated to slot 3
+assert
+itxn_begin
+intc_3 // axfer
+itxn_field TypeEnum
+bytec 7 // "locked_asa_id"
+app_global_get
+itxn_field XferAsset
+bytec 11 // "b3_address"
+app_global_get
+itxn_field AssetReceiver
+bytec 14 // "b3_asa_amount"
+app_global_get
+itxn_field AssetAmount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 21 // "b3_asa_claimed"
+intc_1 // 1
+app_global_put
+bytec 14 // "b3_asa_amount"
+app_global_get
+frame_bury 0
+b claimasa_9_l7
+claimasa_9_l5:
+txn Sender
+bytec 10 // "b2_address"
+app_global_get
+==
+// Not beneficiary 2
+assert
+bytec 22 // "b2_asa_claimed"
+app_global_get
+intc_0 // 0
+==
+// Already claimed
+assert
+bytec 13 // "b2_asa_amount"
+app_global_get
+intc_0 // 0
+>
+// No ASA allocated to slot 2
+assert
+itxn_begin
+intc_3 // axfer
+itxn_field TypeEnum
+bytec 7 // "locked_asa_id"
+app_global_get
+itxn_field XferAsset
+bytec 10 // "b2_address"
+app_global_get
+itxn_field AssetReceiver
+bytec 13 // "b2_asa_amount"
+app_global_get
+itxn_field AssetAmount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 22 // "b2_asa_claimed"
+intc_1 // 1
+app_global_put
+bytec 13 // "b2_asa_amount"
+app_global_get
+frame_bury 0
+b claimasa_9_l7
+claimasa_9_l6:
+txn Sender
+bytec 9 // "b1_address"
+app_global_get
+==
+// Not beneficiary 1
+assert
+bytec 23 // "b1_asa_claimed"
+app_global_get
+intc_0 // 0
+==
+// Already claimed
+assert
+bytec 12 // "b1_asa_amount"
+app_global_get
+intc_0 // 0
+>
+// No ASA allocated to slot 1
+assert
+itxn_begin
+intc_3 // axfer
+itxn_field TypeEnum
+bytec 7 // "locked_asa_id"
+app_global_get
+itxn_field XferAsset
+bytec 9 // "b1_address"
+app_global_get
+itxn_field AssetReceiver
+bytec 12 // "b1_asa_amount"
+app_global_get
+itxn_field AssetAmount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+bytec 23 // "b1_asa_claimed"
+intc_1 // 1
+app_global_put
+bytec 12 // "b1_asa_amount"
+app_global_get
+frame_bury 0
+claimasa_9_l7:
+retsub
+
+// get_will_status
+getwillstatus_10:
+proto 0 1
+bytec_0 // ""
+bytec 4 // "will_created"
+app_global_get
+intc_0 // 0
+==
+bnz getwillstatus_10_l8
+bytec_2 // "inheritance_active"
+app_global_get
+intc_1 // 1
+==
+bnz getwillstatus_10_l7
+global LatestTimestamp
+bytec 6 // "last_checkin"
+app_global_get
+bytec 8 // "inactivity_period"
+app_global_get
++
+>
+bnz getwillstatus_10_l6
+intc_1 // 1
+bnz getwillstatus_10_l5
+err
+getwillstatus_10_l5:
+pushbytes 0x414c495645 // "ALIVE"
+b getwillstatus_10_l9
+getwillstatus_10_l6:
+pushbytes 0x52454144595f544f5f4143544956415445 // "READY_TO_ACTIVATE"
+b getwillstatus_10_l9
+getwillstatus_10_l7:
+pushbytes 0x494e4845524954414e43455f414354495645 // "INHERITANCE_ACTIVE"
+b getwillstatus_10_l9
+getwillstatus_10_l8:
+pushbytes 0x4e4f5f57494c4c // "NO_WILL"
+getwillstatus_10_l9:
+frame_bury 0
+frame_dig 0
+len
+itob
+extract 6 0
+frame_dig 0
+concat
+frame_bury 0
+retsub
+
+// get_time_remaining
+gettimeremaining_11:
+proto 0 1
+intc_0 // 0
+global LatestTimestamp
+bytec 6 // "last_checkin"
+app_global_get
+bytec 8 // "inactivity_period"
+app_global_get
++
+>=
+bnz gettimeremaining_11_l2
+bytec 6 // "last_checkin"
+app_global_get
+bytec 8 // "inactivity_period"
+app_global_get
++
+global LatestTimestamp
+-
+frame_bury 0
+b gettimeremaining_11_l3
+gettimeremaining_11_l2:
+intc_0 // 0
+frame_bury 0
+gettimeremaining_11_l3:
+retsub
+
+// get_locked_balance
+getlockedbalance_12:
+proto 0 1
+intc_0 // 0
+bytec_1 // "total_locked"
+app_global_get
+frame_bury 0
+retsub
+
+// create_will_caster
+createwillcaster_13:
+proto 0 0
+bytec_0 // ""
+intc_0 // 0
+bytec_0 // ""
+intc_0 // 0
+bytec_0 // ""
+intc_0 // 0
+bytec_0 // ""
+intc_0 // 0
+txna ApplicationArgs 1
+btoi
+frame_bury 1
+txna ApplicationArgs 2
+frame_bury 2
+txna ApplicationArgs 3
+btoi
+frame_bury 3
+txna ApplicationArgs 4
+frame_bury 4
+txna ApplicationArgs 5
+btoi
+frame_bury 5
+txna ApplicationArgs 6
+frame_bury 6
+txna ApplicationArgs 7
+btoi
+frame_bury 7
+frame_dig 1
+frame_dig 2
+frame_dig 3
+frame_dig 4
+frame_dig 5
+frame_dig 6
+frame_dig 7
+callsub createwill_0
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// deposit_caster
+depositcaster_14:
+proto 0 0
+intc_0 // 0
+dup
+txn GroupIndex
+intc_1 // 1
+-
+frame_bury 1
+frame_dig 1
+gtxns TypeEnum
+intc_1 // pay
+==
+assert
+frame_dig 1
+callsub deposit_1
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub
+
+// check_in_caster
+checkincaster_15:
+proto 0 0
+intc_0 // 0
+callsub checkin_2
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub
+
+// activate_inheritance_caster
+activateinheritancecaster_16:
+proto 0 0
+bytec_0 // ""
+callsub activateinheritance_3
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// force_activate_caster
+forceactivatecaster_17:
+proto 0 0
+bytec_0 // ""
+callsub forceactivate_4
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// claim_caster
+claimcaster_18:
+proto 0 0
+intc_0 // 0
+dup
+txna ApplicationArgs 1
+btoi
+frame_bury 1
+frame_dig 1
+callsub claim_5
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub
+
+// revoke_will_caster
+revokewillcaster_19:
+proto 0 0
+bytec_0 // ""
+callsub revokewill_6
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// opt_in_asa_caster
+optinasacaster_20:
+proto 0 0
+bytec_0 // ""
+intc_0 // 0
+txna ApplicationArgs 1
+intc_0 // 0
+getbyte
+frame_bury 1
+frame_dig 1
+callsub optinasa_7
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// lock_asa_caster
+lockasacaster_21:
+proto 0 0
+bytec_0 // ""
+intc_0 // 0
+dupn 3
+txna ApplicationArgs 1
+btoi
+frame_bury 2
+txna ApplicationArgs 2
+btoi
+frame_bury 3
+txna ApplicationArgs 3
+btoi
+frame_bury 4
+txn GroupIndex
+intc_1 // 1
+-
+frame_bury 1
+frame_dig 1
+gtxns TypeEnum
+intc_3 // axfer
+==
+assert
+frame_dig 1
+frame_dig 2
+frame_dig 3
+frame_dig 4
+callsub lockasa_8
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// claim_asa_caster
+claimasacaster_22:
+proto 0 0
+intc_0 // 0
+dup
+txna ApplicationArgs 1
+btoi
+frame_bury 1
+frame_dig 1
+callsub claimasa_9
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub
+
+// get_will_status_caster
+getwillstatuscaster_23:
+proto 0 0
+bytec_0 // ""
+callsub getwillstatus_10
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+concat
+log
+retsub
+
+// get_time_remaining_caster
+gettimeremainingcaster_24:
+proto 0 0
+intc_0 // 0
+callsub gettimeremaining_11
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub
+
+// get_locked_balance_caster
+getlockedbalancecaster_25:
+proto 0 0
+intc_0 // 0
+callsub getlockedbalance_12
+frame_bury 0
+bytec_3 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub

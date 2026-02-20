@@ -1,25 +1,10 @@
-# 🏛 AlgoLegacy — Time-Locked Digital Will on Algorand
+# AlgoLegacy -- Time-Locked Digital Will on Algorand
 
-> **On-chain inheritance, secured by time. No lawyers. No trust assumptions. Just code.**
-
-[![Algorand](https://img.shields.io/badge/Built%20on-Algorand-00BCD4?style=flat-square)](https://algorand.com)
-[![Network](https://img.shields.io/badge/Network-Testnet-orange?style=flat-square)](https://testnet.algoexplorer.io)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+A trustless, time-locked digital will system deployed on the Algorand blockchain. Owners lock ALGO and ASA tokens in a smart contract, designate up to 3 beneficiaries with percentage splits, and if the owner fails to check in within the inactivity period, beneficiaries can claim their inheritance on-chain.
 
 ---
 
-## 🎯 What Is AlgoLegacy?
-
-AlgoLegacy is a **trustless, time-locked digital will** deployed on the Algorand blockchain.
-
-- The **owner** locks ALGO into a smart contract and designates up to 3 beneficiaries with percentage shares.
-- The owner must **check in** (prove they're alive) before the inactivity period expires.
-- If the owner **misses their check-in**, anyone can trigger inheritance activation.
-- Beneficiaries then **claim** their share directly from the contract — no intermediaries.
-
----
-
-## 🏗 Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -28,10 +13,9 @@ AlgoLegacy is a **trustless, time-locked digital will** deployed on the Algorand
 │   ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
 │   │ CreateWill   │  │  OwnerDash   │  │  Beneficiary     │ │
 │   │ Form         │  │  Check-in    │  │  Panel + Claim   │ │
-│   │              │  │  Deposit     │  │                  │ │
 │   └──────────────┘  └──────────────┘  └──────────────────┘ │
 └────────────────────────────┬────────────────────────────────┘
-                             │ ABI Method Calls
+                             │ ABI Method Calls (ARC-4)
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              SMART CONTRACT (Beaker + PyTEAL)               │
@@ -40,53 +24,61 @@ AlgoLegacy is a **trustless, time-locked digital will** deployed on the Algorand
 │    owner, inactivity_period, last_checkin,                  │
 │    inheritance_active, total_locked,                        │
 │    beneficiary{1,2,3}_{address,percent,claimed}             │
+│    locked_asa_id, b{1,2,3}_asa_amount, b{1,2,3}_asa_claimed│
 │                                                             │
 │  Methods:                                                   │
-│    create_will() → deposit() → check_in()                   │
-│    activate_inheritance() → claim() → revoke_will()         │
+│    create_will | check_in | trigger_inheritance             │
+│    claim_inheritance | cancel_will                          │
+│    lock_asa | claim_asa                                     │
 │                                                             │
 └────────────────────────────┬────────────────────────────────┘
-                             │
+                             │ Inner Transactions
                              ▼
               ┌──────────────────────────┐
               │   Algorand Testnet       │
-              │   AlgoExplorer Indexer   │
               └──────────────────────────┘
 ```
 
 ---
 
-## 🗂 Project Structure
+## Project Structure
 
 ```
 algolegacy/
 ├── contracts/
-│   ├── algolegacy.py          ← Beaker smart contract (full logic)
+│   ├── algolegacy.py              Beaker smart contract
 │   ├── __init__.py
-│   └── artifacts/             ← Generated TEAL + ABI (after compile)
+│   └── artifacts/                 Generated TEAL + ABI (after compile)
 │       ├── AlgoLegacy.approval.teal
 │       ├── AlgoLegacy.clear.teal
 │       ├── AlgoLegacy.abi.json
 │       └── deployed.json
 ├── tests/
-│   └── test_inheritance.py    ← Full pytest test suite (16 scenarios)
+│   └── test_inheritance.py        Pytest test suite
 ├── scripts/
-│   ├── deploy.py              ← Deploy to testnet
-│   └── compile.py             ← Compile to TEAL artifacts
+│   ├── deploy.py                  Deploy to testnet
+│   └── compile.py                 Compile to TEAL artifacts
 ├── frontend/
+│   ├── craco.config.js            PostCSS config (Tailwind v4)
 │   ├── public/
 │   │   └── index.html
 │   ├── src/
-│   │   ├── App.js             ← Root component
-│   │   ├── algorand.js        ← Algorand utility layer
-│   │   ├── index.css          ← Dark-theme styles
-│   │   └── components/
-│   │       ├── WalletContext.js    ← Pera Wallet management
-│   │       ├── Navbar.js           ← Header + wallet button
-│   │       ├── CreateWillForm.js   ← Will creation form
-│   │       ├── OwnerDashboard.js   ← Check-in, deposit, revoke
-│   │       ├── BeneficiaryPanel.js ← Claim UI
-│   │       └── CountdownTimer.js   ← Live countdown
+│   │   ├── App.js                 Root component
+│   │   ├── algorand.js            Algorand utility layer
+│   │   ├── index.css              Global styles + Tailwind
+│   │   ├── components/
+│   │   │   ├── WalletContext.js   Pera Wallet management
+│   │   │   ├── Navbar.js          Header + wallet button
+│   │   │   ├── CreateWillForm.js  Will creation form
+│   │   │   ├── OwnerDashboard.js  Check-in, cancel, manage
+│   │   │   ├── BeneficiaryPanel.js  Claim UI
+│   │   │   ├── ClaimsView.js      Claims overview
+│   │   │   ├── CountdownTimer.js  Live countdown
+│   │   │   ├── DigitalAssetsPanel.js  ASA/NFT management
+│   │   │   ├── ShootingStars.js   Background animation
+│   │   │   └── StarsBackground.js Starfield animation
+│   │   └── utils/
+│   │       └── ipfs.js            IPFS upload utility
 │   ├── package.json
 │   └── .env.example
 ├── requirements.txt
@@ -96,166 +88,110 @@ algolegacy/
 
 ---
 
-## ⚡ Quick Start
+## Prerequisites
 
-### Prerequisites
-
-| Tool | Install |
-|------|---------|
-| Python 3.10+ | [python.org](https://python.org) |
-| Node.js 18+  | [nodejs.org](https://nodejs.org) |
-| AlgoKit CLI  | `pip install algokit` |
-| Git          | [git-scm.com](https://git-scm.com) |
+| Tool         | Version  |
+|--------------|----------|
+| Python       | 3.10+    |
+| Node.js      | 18+      |
+| Git          | any      |
 
 ---
 
-### 1️⃣ Clone & Install
+## Setup
+
+### 1. Clone and Install
 
 ```bash
 git clone https://github.com/your-repo/algolegacy
 cd algolegacy
 
-# Python dependencies
 pip install -r requirements.txt
 
-# Frontend dependencies
 cd frontend
 npm install
 cd ..
 ```
 
----
-
-### 2️⃣ Configure Environment
+### 2. Configure Environment
 
 ```bash
-# Copy and fill in your values
 cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```env
 ALGO_MNEMONIC=your 25 word mnemonic here
 NETWORK=testnet
 ```
 
-> 💡 Get free testnet ALGO from the [Algorand Testnet Dispenser](https://testnet.algoexplorer.io/dispenser)
+Get free testnet ALGO from the [Algorand Testnet Dispenser](https://bank.testnet.algorand.network/).
 
----
-
-### 3️⃣ Compile the Contract
+### 3. Compile the Contract
 
 ```bash
 python scripts/compile.py
 ```
 
-Outputs TEAL files to `contracts/artifacts/`.
-
----
-
-### 4️⃣ Deploy to Testnet
+### 4. Deploy to Testnet
 
 ```bash
 python scripts/deploy.py
 ```
 
-Copy the printed **App ID** into `frontend/.env`:
+Copy the printed App ID into `frontend/.env`:
 
 ```env
 REACT_APP_APP_ID=123456789
 ```
 
----
-
-### 5️⃣ Fund the Contract Account
-
-The contract needs a small ALGO balance for inner transaction fees:
-
-```bash
-# Use AlgoKit sandbox or send from your wallet to the printed App Address
-algokit goal clerk send -a 500000 -f YOUR_ADDRESS -t APP_ADDRESS
-```
-
----
-
-### 6️⃣ Run Frontend
+### 5. Run Frontend
 
 ```bash
 cd frontend
 cp .env.example .env
-# Set REACT_APP_APP_ID=<your-app-id>
+# Set REACT_APP_APP_ID in .env
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open http://localhost:3000
 
----
-
-### 7️⃣ Run Tests (local sandbox)
+### 6. Run Tests (local sandbox)
 
 ```bash
-# Start AlgoKit sandbox first
 algokit localnet start
-
-# Run tests
 pytest tests/ -v
 ```
 
 ---
 
-## 🔐 Smart Contract Security Q&A
+## Contract Methods
 
-| Judge Question | Answer |
-|----------------|--------|
-| **What prevents early activation?** | `Assert(Global.latest_timestamp() > last_checkin + inactivity_period)` — the blockchain timestamp must exceed the deadline. This is trustless. |
-| **What prevents fake beneficiary claims?** | `Assert(Txn.sender() == beneficiaryN_address)` — only the exact registered address can claim that slot. |
-| **What if percentages exceed 100%?** | `Assert(b1_pct + b2_pct + b3_pct == 100)` — the `create_will` call fails on-chain if percentages don't sum to exactly 100. |
-| **What if owner wants to revoke?** | `revoke_will()` method returns all funds to owner. Blocked after activation. |
-| **Double-claim protection?** | `beneficiaryN_claimed` flag set to 1 after claim. Second attempt fails with "already claimed". |
-
----
-
-## 🔗 Contract Methods
-
-| Method | Who Calls | Description |
-|--------|-----------|-------------|
-| `create_will(period, b1_addr, b1_pct, b2_addr, b2_pct, b3_addr, b3_pct)` | Owner | Initialize will with beneficiaries |
-| `deposit(payment)` | Owner | Lock ALGO into the contract |
-| `check_in()` | Owner | Reset inactivity clock (proof of life) |
-| `activate_inheritance()` | Anyone | Trigger activation after deadline |
-| `claim(slot)` | Beneficiary | Claim percentage share |
-| `revoke_will()` | Owner | Cancel will, reclaim funds |
-| `get_will_status()` | Anyone | Read-only: ALIVE / READY_TO_ACTIVATE / INHERITANCE_ACTIVE |
-| `get_time_remaining()` | Anyone | Read-only: seconds until deadline |
-| `get_locked_balance()` | Anyone | Read-only: microALGO in contract |
+| Method | Caller | Description |
+|--------|--------|-------------|
+| `create_will` | Owner | Initialize will with ALGO deposit, inactivity period, and up to 3 beneficiaries with percentage splits |
+| `check_in` | Owner | Reset inactivity clock (proof of life) |
+| `trigger_inheritance` | Anyone | Activate inheritance after inactivity deadline has passed |
+| `claim_inheritance` | Beneficiary | Claim ALGO share after inheritance is active |
+| `cancel_will` | Owner | Cancel will and reclaim all locked ALGO (blocked after activation) |
+| `lock_asa` | Owner | Lock an ASA token into the will with per-beneficiary amounts |
+| `claim_asa` | Beneficiary | Claim ASA allocation after inheritance is active |
 
 ---
 
-## 🎬 Demo Script (for LinkedIn video)
+## Security
 
-1. **Connect** Pera Wallet on Testnet
-2. **Create Will** — set 60-second inactivity period, add 3 beneficiary addresses
-3. **Deposit** 3 ALGO → show locked balance
-4. **Show countdown** timer live on screen
-5. **Wait 60 seconds** — do NOT check in
-6. **Activate Inheritance** → click the button
-7. **Switch wallet** to Beneficiary 1
-8. **Claim** → live funds transferred → open AlgoExplorer and show the transaction
-
----
-
-## 🏆 Hackathon Deliverables Checklist
-
-- [x] Public GitHub repository
-- [x] Deployed smart contract (App ID in `contracts/artifacts/deployed.json`)
-- [x] Live hosted frontend
-- [x] Testnet explorer link
-- [x] Architecture diagram (see above)
-- [x] LinkedIn demo video
-- [x] README with full setup steps
+| Concern | Protection |
+|---------|------------|
+| Early activation | Contract asserts `latest_timestamp > last_checkin + inactivity_period` |
+| Unauthorized claims | Contract asserts `Txn.sender == registered beneficiary address` |
+| Invalid percentages | Contract asserts `b1_pct + b2_pct + b3_pct == 100` |
+| Double claims | `claimed` flag set to 1 after first claim; second attempt is rejected |
+| Unauthorized cancel | Only the owner address can call `cancel_will` |
 
 ---
 
-## 📄 License
+## License
 
-MIT — feel free to fork, improve, and build on top of AlgoLegacy.
+MIT

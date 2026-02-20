@@ -1,111 +1,203 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CreateWillForm.js — Owner sets up the will + beneficiaries
+// CreateWillForm.js — Owner sets up the will + beneficiaries (1–3 people)
+//   Each will deploys a *new* on-chain app instance so one owner can have
+//   multiple simultaneous wills.
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useState } from "react";
 import algosdk from "algosdk";
 import { useWallet } from "./WalletContext";
-import { callMethod, APP_ID } from "../algorand";
+import { callMethod, deployWillApp, addStoredWillId } from "../algorand";
 import { toast } from "react-toastify";
 
-const DEFAULT_PERIOD_MINS = 2; // default 2 minutes for demo
+// Format a Date as value for datetime-local with seconds granularity
+function toDatetimeLocal(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    date.getFullYear() +
+    "-" + pad(date.getMonth() + 1) +
+    "-" + pad(date.getDate()) +
+    "T" + pad(date.getHours()) +
+    ":" + pad(date.getMinutes()) +
+    ":" + pad(date.getSeconds())
+  );
+}
+
+const defaultDeadline = toDatetimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000));
+const emptyBeneficiary = () => ({ address: "", percent: "" });
 
 export default function CreateWillForm({ onSuccess }) {
   const { activeAddr, makeSigner } = useWallet();
 
-  const [period, setPeriod]   = useState(DEFAULT_PERIOD_MINS);
-  const [loading, setLoading] = useState(false);
+  const [deadline, setDeadline] = useState(defaultDeadline);
+  const [step, setStep]         = useState(null); // null | "deploying" | "creating"
 
-  const [b1, setB1] = useState({ address: "", percent: 50 });
-  const [b2, setB2] = useState({ address: "", percent: 30 });
-  const [b3, setB3] = useState({ address: "", percent: 20 });
+  // Start with 1 beneficiary; user can add up to 3
+  const [beneficiaries, setBeneficiaries] = useState([{ address: "", percent: 100 }]);
 
-  const totalPct = Number(b1.percent) + Number(b2.percent) + Number(b3.percent);
+  const totalPct = beneficiaries.reduce((sum, b) => sum + Number(b.percent || 0), 0);
+  const secondsUntilDeadline = deadline
+    ? Math.floor((new Date(deadline).getTime() - Date.now()) / 1000)
+    : 0;
 
+  // ── Beneficiary list helpers ─────────────────────────────────────────────
+  const addBeneficiary = () => {
+    if (beneficiaries.length >= 3) return;
+    setBeneficiaries((prev) => [...prev, emptyBeneficiary()]);
+  };
+
+  const removeBeneficiary = (idx) => {
+    if (beneficiaries.length <= 1) return;
+    setBeneficiaries((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateBeneficiary = (idx, field, val) => {
+    setBeneficiaries((prev) =>
+      prev.map((b, i) => (i === idx ? { ...b, [field]: val } : b))
+    );
+  };
+
+  // ── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!activeAddr) return toast.error("Connect your wallet first");
-    if (!APP_ID)     return toast.error("APP_ID not set — deploy the contract first");
-    if (totalPct !== 100) return toast.error("Beneficiary percentages must sum to 100%");
+    if (!activeAddr)         return toast.error("Connect your wallet first");
+    if (totalPct !== 100)    return toast.error("Beneficiary percentages must sum to 100%");
+    if (secondsUntilDeadline <= 0) return toast.error("Deadline must be in the future");
 
-    // Trim and validate addresses
-    const addr1 = b1.address.trim();
-    const addr2 = b2.address.trim();
-    const addr3 = b3.address.trim();
+    // Validate filled beneficiaries
+    for (let i = 0; i < beneficiaries.length; i++) {
+      const addr = beneficiaries[i].address.trim();
+      if (!addr) return toast.error(`Beneficiary ${i + 1}: address is required`);
+      if (!algosdk.isValidAddress(addr))
+        return toast.error(`Beneficiary ${i + 1}: invalid Algorand address`);
+    }
 
-    if (!addr1) return toast.error("Beneficiary 1 address is required");
-    if (!addr2) return toast.error("Beneficiary 2 address is required");
-    if (!addr3) return toast.error("Beneficiary 3 address is required");
-    if (!algosdk.isValidAddress(addr1)) return toast.error("Beneficiary 1: invalid Algorand address");
-    if (!algosdk.isValidAddress(addr2)) return toast.error("Beneficiary 2: invalid Algorand address");
-    if (!algosdk.isValidAddress(addr3)) return toast.error("Beneficiary 3: invalid Algorand address");
+    // Pad to 3 slots — unused slots get owner address + 0%
+    const slots = [...beneficiaries];
+    while (slots.length < 3) slots.push({ address: activeAddr, percent: 0 });
 
-    setLoading(true);
     try {
       const signer = makeSigner();
+
+      // ── Step 1: Deploy new app ──────────────────────────────────────────
+      setStep("deploying");
+      toast.info("Step 1/2 — Deploying new will contract…");
+      const newAppId = await deployWillApp(activeAddr, signer);
+      toast.success(`Contract deployed (App ID: ${newAppId})`);
+
+      // ── Step 2: Initialise will on-chain ────────────────────────────────
+      setStep("creating");
+      toast.info("Step 2/2 — Initialising will on-chain…");
       const result = await callMethod({
-        sender: activeAddr,
+        sender:     activeAddr,
         signer,
         methodName: "create_will",
-        appId: APP_ID,
+        appId:      newAppId,
         methodArgs: [
-          BigInt(Math.floor(period * 60)),   // minutes → seconds
-          addr1,
-          BigInt(Number(b1.percent)),
-          addr2,
-          BigInt(Number(b2.percent)),
-          addr3,
-          BigInt(Number(b3.percent)),
+          BigInt(secondsUntilDeadline),
+          slots[0].address.trim(),
+          BigInt(Number(slots[0].percent)),
+          slots[1].address.trim(),
+          BigInt(Number(slots[1].percent)),
+          slots[2].address.trim(),
+          BigInt(Number(slots[2].percent)),
         ],
       });
-      toast.success(`✅ Will created! Tx: ${result.txId?.slice(0, 8)}…`);
-      onSuccess?.();
+
+      addStoredWillId(activeAddr, newAppId);
+      toast.success(`Will created! App ID: ${newAppId}  Tx: ${result.txId?.slice(0, 8)}…`);
+      onSuccess?.(newAppId);
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Transaction failed");
     } finally {
-      setLoading(false);
+      setStep(null);
     }
   };
 
+  const loading = step !== null;
+
   return (
     <div className="card">
-      <h2>📜 Create Your Will</h2>
+      <h2>Create New Will</h2>
+      <p className="text-muted" style={{ marginBottom: 20, fontSize: 13 }}>
+        Each will is its own on-chain contract. You can create as many as you like.
+      </p>
 
       <form onSubmit={handleSubmit}>
-        {/* Inactivity period */}
+        {/* Inactivity deadline */}
         <div className="form-group">
-          <label>Inactivity Period (minutes)</label>
+          <label>Inactivity Deadline (Date, Time &amp; Seconds)</label>
           <input
-            type="number"
-            min={1}
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            placeholder="e.g. 2 (2 minutes for demo)"
+            type="datetime-local"
+            step="1"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
           />
           <p className="text-muted" style={{ marginTop: 4 }}>
-            If you miss check-in for this many minutes, inheritance activates automatically.
+            If you miss check-in until this date &amp; time, inheritance activates automatically.
+            {deadline && secondsUntilDeadline > 0 && (
+              <span style={{ color: "var(--accent-green)", marginLeft: 6 }}>
+                ({Math.floor(secondsUntilDeadline / 86400)}d{" "}
+                {Math.floor((secondsUntilDeadline % 86400) / 3600)}h{" "}
+                {Math.floor((secondsUntilDeadline % 3600) / 60)}m{" "}
+                {secondsUntilDeadline % 60}s from now)
+              </span>
+            )}
+            {deadline && secondsUntilDeadline <= 0 && (
+              <span style={{ color: "var(--accent-red)", marginLeft: 6 }}>
+                ⚠ Deadline must be in the future
+              </span>
+            )}
           </p>
         </div>
 
         <hr className="divider" />
-        <p style={{ fontWeight: 700, marginBottom: 12 }}>
-          Beneficiaries{" "}
-          <span
-            style={{
-              color: totalPct === 100 ? "var(--accent-green)" : "var(--accent-red)",
-              fontSize: 13,
-            }}
-          >
-            ({totalPct}% allocated — must equal 100%)
-          </span>
-        </p>
 
-        {/* Beneficiary 1 */}
-        <BeneficiaryInput label="Beneficiary 1" value={b1} onChange={setB1} />
-        {/* Beneficiary 2 */}
-        <BeneficiaryInput label="Beneficiary 2" value={b2} onChange={setB2} />
-        {/* Beneficiary 3 */}
-        <BeneficiaryInput label="Beneficiary 3" value={b3} onChange={setB3} />
+        {/* Beneficiary header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <p style={{ fontWeight: 700, margin: 0 }}>
+            Beneficiaries{" "}
+            <span
+              style={{
+                color: totalPct === 100 ? "var(--accent-green)" : "var(--accent-red)",
+                fontSize: 13,
+              }}
+            >
+              ({totalPct}% allocated — must equal 100%)
+            </span>
+          </p>
+          {beneficiaries.length < 3 && (
+            <button
+              type="button"
+              className="btn"
+              onClick={addBeneficiary}
+              style={{
+                fontSize: 12,
+                padding: "4px 12px",
+                background: "var(--accent-green)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              ＋ Add Beneficiary
+            </button>
+          )}
+        </div>
+
+        {/* Beneficiary rows */}
+        {beneficiaries.map((b, idx) => (
+          <BeneficiaryInput
+            key={idx}
+            label={`Beneficiary ${idx + 1}`}
+            value={b}
+            onChangeAddress={(v) => updateBeneficiary(idx, "address", v)}
+            onChangePercent={(v) => updateBeneficiary(idx, "percent", v)}
+            canRemove={beneficiaries.length > 1}
+            onRemove={() => removeBeneficiary(idx)}
+          />
+        ))}
 
         <button
           type="submit"
@@ -113,34 +205,68 @@ export default function CreateWillForm({ onSuccess }) {
           disabled={loading || totalPct !== 100}
           style={{ marginTop: 8, width: "100%" }}
         >
-          {loading ? <><span className="spinner" /> Creating Will…</> : "🏛 Create Will"}
+          {step === "deploying" && <><span className="spinner" /> Deploying contract…</>}
+          {step === "creating"  && <><span className="spinner" /> Creating will…</>}
+          {!loading             && "Create Will"}
         </button>
       </form>
     </div>
   );
 }
 
-function BeneficiaryInput({ label, value, onChange }) {
+function BeneficiaryInput({ label, value, onChangeAddress, onChangePercent, canRemove, onRemove }) {
   return (
-    <div className="form-row" style={{ marginBottom: 12 }}>
-      <div className="form-group" style={{ marginBottom: 0 }}>
-        <label>{label} Address</label>
-        <input
-          type="text"
-          value={value.address}
-          onChange={(e) => onChange({ ...value, address: e.target.value.trim() })}
-          placeholder="ALGO address (58 characters)…"
-        />
+    <div
+      className="form-row"
+      style={{
+        marginBottom: 12,
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 8,
+        padding: "10px 12px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontWeight: 600, fontSize: 13 }}>{label}</span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--accent-red)",
+              cursor: "pointer",
+              fontSize: 18,
+              lineHeight: 1,
+              padding: 0,
+            }}
+            title="Remove beneficiary"
+          >
+            ✕
+          </button>
+        )}
       </div>
-      <div className="form-group" style={{ marginBottom: 0 }}>
-        <label>Share %</label>
-        <input
-          type="number"
-          min={0}
-          max={100}
-          value={value.percent}
-          onChange={(e) => onChange({ ...value, percent: e.target.value })}
-        />
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="form-group" style={{ flex: "1 1 240px", marginBottom: 0 }}>
+          <label>Address</label>
+          <input
+            type="text"
+            value={value.address}
+            onChange={(e) => onChangeAddress(e.target.value.trim())}
+            placeholder="ALGO address (58 characters)…"
+          />
+        </div>
+        <div className="form-group" style={{ flex: "0 0 90px", marginBottom: 0 }}>
+          <label>Share %</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={value.percent}
+            onChange={(e) => onChangePercent(e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );

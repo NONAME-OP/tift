@@ -6,7 +6,7 @@
     "C:/Users/saiki/AppData/Local/Programs/Python/Python310/lib/site-packages"
   ],
   "include": ["contracts", "scripts", "tests"],
-  "exclude": ["frontend", "**/__pycache__"],
+  "exclude": ["frontend", "**/__pycache__", "**/node_modules", "**/.*"],
   "reportMissingImports": "none",
   "reportMissingModuleSource": "none",
   "reportUnknownMemberType": "none",
