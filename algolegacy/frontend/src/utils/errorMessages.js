@@ -1,6 +1,47 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // errorMessages.js — Human-friendly error messages for Algorand transactions
 // ─────────────────────────────────────────────────────────────────────────────
+import React from "react";
+import { toast } from "react-toastify";
+
+/* ── Copyable address chip ─────────────────────────────────────────────────── */
+function CopyAddress({ addr }) {
+  const short = addr.slice(0, 8) + "…" + addr.slice(-6);
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(addr).then(() =>
+          toast.info("Address copied to clipboard!", { autoClose: 1500 })
+        );
+      }}
+      style={{
+        cursor: "pointer",
+        textDecoration: "underline",
+        fontFamily: "monospace",
+        fontWeight: "bold",
+        color: "#60a5fa",
+      }}
+      title={`Click to copy: ${addr}`}
+    >
+      {short}
+    </span>
+  );
+}
+
+/** Try to extract an Algorand address from the raw message and build JSX */
+function balanceMessageWithAccount(msg, fallback) {
+  const m = msg.match(/account\s+([A-Z2-7]{58})/i);
+  if (m) {
+    return (
+      <span>
+        Insufficient balance for account <CopyAddress addr={m[1]} />.
+        Please fund this wallet and try again.
+      </span>
+    );
+  }
+  return fallback;
+}
 
 /**
  * Map of regex patterns to user-friendly messages.
@@ -10,15 +51,27 @@ const ERROR_PATTERNS = [
   // ── Balance / funding errors ──────────────────────────────────────────────
   {
     pattern: /overspend|underflow|below min/i,
-    message: "Insufficient balance. Your wallet does not have enough ALGO to complete this transaction. Please fund your wallet and try again.",
+    getMessageFromFull: (msg) =>
+      balanceMessageWithAccount(
+        msg,
+        "Insufficient balance. Your wallet does not have enough ALGO to complete this transaction. Please fund your wallet and try again."
+      ),
   },
   {
     pattern: /min balance|minimum balance/i,
-    message: "This transaction would drop your account below the minimum required ALGO balance. You need more ALGO in your wallet.",
+    getMessageFromFull: (msg) =>
+      balanceMessageWithAccount(
+        msg,
+        "This transaction would drop your account below the minimum required ALGO balance. You need more ALGO in your wallet."
+      ),
   },
   {
     pattern: /balance.*below|insufficient.*fund|not enough.*algo/i,
-    message: "Insufficient ALGO balance. Please add more funds to your wallet.",
+    getMessageFromFull: (msg) =>
+      balanceMessageWithAccount(
+        msg,
+        "Insufficient ALGO balance. Please add more funds to your wallet."
+      ),
   },
 
   // ── Opt-in errors ─────────────────────────────────────────────────────────
@@ -194,6 +247,10 @@ export function parseError(error) {
  */
 export function parseActionError(error, action) {
   const parsed = parseError(error);
+  // If parseError returned JSX, wrap with prefix as JSX
+  if (React.isValidElement(parsed)) {
+    return <span>{action} failed: {parsed}</span>;
+  }
   // Don't double-prefix if the parsed message already mentions the action
   if (parsed.toLowerCase().includes(action.toLowerCase())) return parsed;
   return `${action} failed: ${parsed}`;
