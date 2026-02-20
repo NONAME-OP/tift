@@ -18,6 +18,7 @@ import {
 } from "../algorand";
 import { toast } from "react-toastify";
 import algosdk from "algosdk";
+import { parseActionError } from "../utils/errorMessages";
 
 // ── tiny helpers ──────────────────────────────────────────────────────────────
 const short = (addr) =>
@@ -156,7 +157,7 @@ function SingleWillClaimCard({ willId, activeAddr, makeSigner, onAnyChange }) {
       await fetchState();
       onAnyChange?.();
     } catch (e) {
-      toast.error(e.message || "ALGO claim failed");
+      toast.error(parseActionError(e, "ALGO Claim"), { autoClose: 8000 });
     } finally {
       setAlgoLoading(false);
     }
@@ -183,7 +184,7 @@ function SingleWillClaimCard({ willId, activeAddr, makeSigner, onAnyChange }) {
       await fetchState();
       onAnyChange?.();
     } catch (e) {
-      toast.error(e.message || "ASA claim failed");
+      toast.error(parseActionError(e, "ASA Claim"), { autoClose: 8000 });
     } finally {
       setLoading(false);
     }
@@ -200,7 +201,7 @@ function SingleWillClaimCard({ willId, activeAddr, makeSigner, onAnyChange }) {
       setMyOptedIn(true);
       toast.success(<span>Opted in to ASA #{freshId}! <TxLink txId={r.txId} /></span>);
     } catch (e) {
-      toast.error(e.message || "Opt-in failed");
+      toast.error(parseActionError(e, "Opt-in"), { autoClose: 8000 });
     } finally {
       setOptInLoading(false);
     }
@@ -538,7 +539,7 @@ export default function ClaimsView({ willAppIds, activeAddr, makeSigner, onAddWi
       setAddId("");
       toast.success(`\u2705 Will #${id} added to your claims!`);
     } catch (e) {
-      toast.error("Could not fetch will: " + (e.message || e));
+      toast.error(parseActionError(e, "Fetch Will"), { autoClose: 8000 });
     } finally {
       setAddLoading(false);
     }

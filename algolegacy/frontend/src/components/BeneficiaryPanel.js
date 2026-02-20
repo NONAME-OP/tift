@@ -6,6 +6,7 @@ import { useWallet } from "./WalletContext";
 import { callMethod, toAlgo, EXPLORER_BASE } from "../algorand";
 import algosdk from "algosdk";
 import { toast } from "react-toastify";
+import { parseActionError } from "../utils/errorMessages";
 
 export default function BeneficiaryPanel({ state, appId, onRefresh }) {
   const { activeAddr, makeSigner } = useWallet();
@@ -54,7 +55,7 @@ export default function BeneficiaryPanel({ state, appId, onRefresh }) {
       onRefresh?.();
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Claim failed");
+      toast.error(parseActionError(err, "Claim"), { autoClose: 8000 });
     } finally {
       setLoading(null);
     }
@@ -75,7 +76,7 @@ export default function BeneficiaryPanel({ state, appId, onRefresh }) {
       toast.success("Inheritance activated!");
       onRefresh?.();
     } catch (err) {
-      toast.error(err.message || "Activation failed — inactivity period may not have elapsed");
+      toast.error(parseActionError(err, "Activation"), { autoClose: 8000 });
     } finally {
       setLoading(null);
     }
@@ -97,7 +98,7 @@ export default function BeneficiaryPanel({ state, appId, onRefresh }) {
       onRefresh?.();
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Force activate failed");
+      toast.error(parseActionError(err, "Force Activate"), { autoClose: 8000 });
     } finally {
       setLoading(null);
     }

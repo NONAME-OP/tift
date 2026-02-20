@@ -25,6 +25,7 @@ import {
   isPinataConfigured,
 } from "../utils/ipfs";
 import { toast } from "react-toastify";
+import { parseError, parseActionError } from "../utils/errorMessages";
 
 // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const toDisplay = (units, decimals) =>
@@ -149,7 +150,7 @@ export function WillTokensTab({ state, appId, onRefresh, activeAddr, makeSigner 
       const result = await callMethod({ sender: activeAddr, signer: makeSigner(), appId, ...opts });
       toast.success(<span>{label}! <TxLink txId={result.txId} /></span>);
       onRefresh?.();
-    } catch (err) { toast.error(err.message || `${label} failed`); }
+    } catch (err) { toast.error(parseActionError(err, label), { autoClose: 8000 }); }
     finally { setLoading(null); }
   };
 
@@ -220,7 +221,7 @@ export function WillTokensTab({ state, appId, onRefresh, activeAddr, makeSigner 
                         const r = await optInToAsa(activeAddr, makeSigner(), freshId);
                         setMyOptedIn(true);
                         toast.success(<span>Opted in to ASA #{freshId}! <TxLink txId={r.txId} /></span>);
-                      } catch (e) { toast.error(e.message || "Opt-in failed"); }
+                      } catch (e) { toast.error(parseActionError(e, "Opt-in"), { autoClose: 8000 }); }
                       finally { setOptInLoading(false); }
                     }}>
                     {optInLoading ? <><span className="spinner" /> Opting Inâ€¦</> : `Opt In to ASA #${lockedId}`}
@@ -479,7 +480,7 @@ function SendTokensTab({ activeAddr, makeSigner }) {
       toast.success(<span>\u2705 Sent {amt} {asaInfo?.unitName||"units"} to {short(receiver)}! <TxLink txId={result.txId} /></span>);
       setAmount("");
       fetchInfo(assetId);
-    } catch (err) { toast.error(err.message || "Send failed"); }
+    } catch (err) { toast.error(parseError(err), { autoClose: 8000 }); }
     finally { setLoading(false); }
   };
 
@@ -593,7 +594,7 @@ function NftWillTab({ state, appId, onRefresh, activeAddr, makeSigner }) {
         myBal,
       });
     } catch (e) {
-      toast.error(`Could not fetch ASA #${id}: ${e.message}`);
+      toast.error(`Could not fetch ASA #${id}. Please verify the Asset ID is correct.`);
       setExistInfo(null);
     }
     finally { setExistFetch(false); }
@@ -630,7 +631,7 @@ function NftWillTab({ state, appId, onRefresh, activeAddr, makeSigner }) {
       toast.success(<span>NFT minted! Asset ID: <strong>{result.assetId}</strong> <TxLink txId={result.txId} /></span>, { autoClose: false });
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Minting failed");
+      toast.error(parseError(err), { autoClose: 8000 });
       setMintStep("idle");
     }
   };
@@ -746,7 +747,7 @@ function NftWillTab({ state, appId, onRefresh, activeAddr, makeSigner }) {
                         methodName:"opt_in_asa", methodArgs:[BigInt(nftId)], foreignAssets:[nftId] });
                       toast.success(<span>Contract opted into NFT #{nftId}! <TxLink txId={result.txId} /></span>);
                       onRefresh?.();
-                    } catch (e) { toast.error(e.message||"Opt-in failed"); }
+                      } catch (e) { toast.error(parseActionError(e, "Opt-in"), { autoClose: 8000 }); }
                     finally { setOptLoading(false); }
                   }}>
                   {optLoading ? <><span className="spinner" /> Opting Inâ€¦</> : `Step 1: Opt Contract Into NFT #${nftId}`}
@@ -776,7 +777,7 @@ function NftWillTab({ state, appId, onRefresh, activeAddr, makeSigner }) {
                                 assetTransfer:{ assetId:freshId, amount:1 }, foreignAssets:[freshId] });
                               toast.success(<span>NFT locked for slot #{slot}! <TxLink txId={result.txId} /></span>);
                               onRefresh?.();
-                            } catch (e) { toast.error(e.message||"Lock failed"); }
+                            } catch (e) { toast.error(parseActionError(e, "Lock NFT"), { autoClose: 8000 }); }
                             finally { setLockLoading(false); }
                           }}>
                           {lockLoading ? <><span className="spinner" /> Lockingâ€¦</> : `Slot ${slot}${addr ? ` (${addr.slice(0,6)}â€¦)` : " (empty)"}`}
@@ -845,7 +846,7 @@ function NftWillTab({ state, appId, onRefresh, activeAddr, makeSigner }) {
                           methodName:"opt_in_asa", methodArgs:[BigInt(existInfo.id)], foreignAssets:[existInfo.id] });
                         toast.success(<span>Contract opted into #{existInfo.id}! <TxLink txId={result.txId} /></span>);
                         onRefresh?.();
-                      } catch (e) { toast.error(e.message || "Opt-in failed"); }
+                      } catch (e) { toast.error(parseActionError(e, "Opt-in"), { autoClose: 8000 }); }
                       finally { setExistOpt(false); }
                     }}>
                     {existOpt ? <><span className="spinner" /> Opting Inâ€¦</> : `Step 1: Opt Contract Into #${existInfo.id}`}
@@ -868,7 +869,7 @@ function NftWillTab({ state, appId, onRefresh, activeAddr, makeSigner }) {
                                 assetTransfer:{ assetId:existInfo.id, amount:1 }, foreignAssets:[existInfo.id] });
                               toast.success(<span>NFT #{existInfo.id} locked for slot {slot}! <TxLink txId={result.txId} /></span>);
                               onRefresh?.();
-                            } catch (e) { toast.error(e.message || "Lock failed"); }
+                            } catch (e) { toast.error(parseActionError(e, "Lock NFT"), { autoClose: 8000 }); }
                             finally { setExistLock(false); }
                           }}>
                           {existLock ? <><span className="spinner" /> Lockingâ€¦</> : `Slot ${slot}${addr ? ` (${addr.slice(0,6)}â€¦)` : " (empty)"}`}

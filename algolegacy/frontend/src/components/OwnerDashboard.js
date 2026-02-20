@@ -6,6 +6,7 @@ import { useWallet } from "./WalletContext";
 import { callMethod, toAlgo, toMicro, EXPLORER_BASE } from "../algorand";
 import CountdownTimer from "./CountdownTimer";
 import { toast } from "react-toastify";
+import { parseActionError } from "../utils/errorMessages";
 
 export default function OwnerDashboard({ state, appId, onRefresh }) {
   const { activeAddr, makeSigner } = useWallet();
@@ -46,7 +47,7 @@ export default function OwnerDashboard({ state, appId, onRefresh }) {
       onRefresh?.();
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Transaction failed");
+      toast.error(parseActionError(err, label), { autoClose: 8000 });
     } finally {
       setLoading(null);
     }

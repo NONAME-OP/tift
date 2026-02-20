@@ -8,6 +8,7 @@ import algosdk from "algosdk";
 import { useWallet } from "./WalletContext";
 import { callMethod, deployWillApp, addStoredWillId } from "../algorand";
 import { toast } from "react-toastify";
+import { parseError } from "../utils/errorMessages";
 
 // Format a Date as value for datetime-local with seconds granularity
 function toDatetimeLocal(date) {
@@ -108,7 +109,7 @@ export default function CreateWillForm({ onSuccess }) {
       onSuccess?.(newAppId);
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Transaction failed");
+      toast.error(parseError(err), { autoClose: 8000 });
     } finally {
       setStep(null);
     }
