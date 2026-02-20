@@ -8,3 +8,4 @@ frontend/build/
 .DS_Store
 .github/
 agents/
+.env
