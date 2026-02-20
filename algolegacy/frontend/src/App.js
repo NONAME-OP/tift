@@ -407,7 +407,7 @@ function AppInner() {
       <footer className="app-footer">
         AlgoLegacy — Built on Algorand Testnet &nbsp;·&nbsp;
         <a
-          href="https://github.com/your-repo/algolegacy"
+          href="https://github.com/NONAME-OP/tift/tree/main/algolegacy"
           target="_blank"
           rel="noreferrer"
         >
